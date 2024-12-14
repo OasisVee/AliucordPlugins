@@ -21,7 +21,7 @@ import java.util.List;
 
 public class ThemeRepoAPI {
     public static final String API_URL = "https://mantikralligi1.pythonanywhere.com";
-    public static final String GITHIB_THEMEREPO_URL = "https://raw.githubusercontent.com/mantikafasi/AliucordThemeRepo/main/";
+    public static final String GITHIB_THEMEREPO_URL = "https://raw.githubusercontent.com/OasisVee/AliucordThemeRepo/main/";
     public static HashMap<String, Object> localFilters = new HashMap<>();
     public static HashMap<String, String> filters;
 
