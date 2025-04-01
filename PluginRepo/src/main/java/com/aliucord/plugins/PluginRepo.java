@@ -68,17 +68,6 @@ public class PluginRepo extends Plugin {
         });
          */
 
-        var guh = Calendar.getInstance().get(Calendar.MONTH);
-        var guh2 = Calendar.getInstance().get(Calendar.DAY_OF_MONTH);
-        if (guh == 3 && guh2 == 1 && settings.getBool("dj391kl",true)) {
-            StoreStream.Companion.getUserSettingsSystem().setTheme(ModelUserSettings.THEME_LIGHT, true, new WidgetSettingsAppearance$updateTheme$1(new WidgetSettingsAppearance(), ModelUserSettings.THEME_LIGHT));
-            settings.setBool("dj391kl",false);
-            Utils.mainThread.postDelayed(() -> {
-                Utils.showToast("Have a blind day! **PluginRepo**");
-            },3000);
-        }
-
-
         patcher.patch(WidgetSettings.class.getDeclaredMethod("onViewBound", View.class), new Hook(cf -> {
             Context ctx = ((WidgetSettings) cf.thisObject).requireContext();
             CoordinatorLayout view = (CoordinatorLayout) cf.args[0];
