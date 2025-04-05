@@ -14,16 +14,17 @@ import com.aliucord.utils.DimenUtils;
 import com.discord.app.AppBottomSheet;
 
 public class BottomShit extends AppBottomSheet {
-
     SettingsAPI settings;
-    public BottomShit(SettingsAPI settingsAPI){
-        settings=settingsAPI;
+
+    public BottomShit(SettingsAPI settingsAPI) {
+        settings = settingsAPI;
     }
 
     @Override
     public int getContentViewResId() {
         return 0;
     }
+
     TextView tw;
     EditText et;
 
@@ -36,12 +37,10 @@ public class BottomShit extends AppBottomSheet {
         tw = new TextView(context);
         tw.setText("Set Encryption Password");
 
-        et  = new EditText(context);
-
-        et.setText(settings.getString("encryptionPassword","Password"));
-        tw.setPadding(px,px,px,0);
-        et.setPadding(px,px,px,px);
-
+        et = new EditText(context);
+        et.setText(settings.getString("encryptionPassword", "Password"));
+        tw.setPadding(px, px, px, 0);
+        et.setPadding(px, px, px, px);
 
         lay.addView(tw);
         lay.addView(et);
@@ -50,8 +49,7 @@ public class BottomShit extends AppBottomSheet {
 
     @Override
     public void onDestroy() {
-        settings.setString("encryptionPassword",et.getText().toString().trim().isEmpty()?"Password":et.getText().toString().trim());
-
+        settings.setString("encryptionPassword", et.getText().toString().trim().isEmpty() ? "Password" : et.getText().toString().trim());
         super.onDestroy();
     }
 }
