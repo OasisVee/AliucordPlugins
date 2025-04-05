@@ -1,20 +1,29 @@
 package com.aliucord.plugins;
 
-import com.aliucord.Http;
 import com.aliucord.Logger;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 public class InvChatAPI {
-    public static String URL = "https://InvisibleChatAPI.hubertmoszkarel.repl.co";
     static Logger logger = new Logger("InvChatAPI");
     static String regex = "[\u200c\u200d\u2062\u2063\u2063]"; //husk
+    private static final String ALGORITHM = "AES/GCM/NoPadding";
+    private static final int TAG_LENGTH_BIT = 128;
+    private static final int IV_LENGTH_BYTE = 12;
+    private static final int AES_KEY_SIZE = 256;
 
     public static boolean containsInvisibleMessage(String message) {
-
         return containsAny(message, "\u200c\u2062\u2063\u2063");
     }
 
@@ -25,48 +34,41 @@ public class InvChatAPI {
         return false;
     }
 
-
     public static String encrypt(String password, String secret, String cover) throws IOException {
-
-        JSONObject json = new JSONObject();
         try {
-            json.put("type", "hide").put("password", password).put("secret", secret + "\u200b").put("cover", cover);
-            String encryptedMessage = makeJSONRequest(json);
-            return ("\u200b" + encryptedMessage);
-        } catch (JSONException e) {
+            SecretKey key = getKeyFromPassword(password);
+            Cipher cipher = Cipher.getInstance(ALGORITHM);
+            byte[] iv = new byte[IV_LENGTH_BYTE];
+            cipher.init(Cipher.ENCRYPT_MODE, key, new GCMParameterSpec(TAG_LENGTH_BIT, iv));
+            byte[] cipherText = cipher.doFinal((secret + "\u200b").getBytes(StandardCharsets.UTF_8));
+            String encryptedMessage = Base64.getEncoder().encodeToString(cipherText);
+            return ("\u200b" + cover + encryptedMessage);
+        } catch (Exception e) {
             e.printStackTrace();
             logger.error(e);
         }
-        return null; //fail  :sob:
-
+        return null; //fail
     }
 
     public static String decrypt(String message, String password) throws IOException {
-        JSONObject json = new JSONObject();
         try {
-            json.put("type", "reveal").put("password", password).put("secret", message);
-            return makeJSONRequest(json);
-        } catch (JSONException e) {
+            SecretKey key = getKeyFromPassword(password);
+            Cipher cipher = Cipher.getInstance(ALGORITHM);
+            byte[] iv = new byte[IV_LENGTH_BYTE];
+            cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(TAG_LENGTH_BIT, iv));
+            String encryptedPart = message.substring(message.indexOf("\u200b") + 1);
+            byte[] decodedMessage = Base64.getDecoder().decode(encryptedPart);
+            byte[] plainText = cipher.doFinal(decodedMessage);
+            return new String(plainText, StandardCharsets.UTF_8).replace("\u200b", "");
+        } catch (Exception e) {
             logger.error(e);
             e.printStackTrace();
         }
-
-        return null; //fail :husk:
+        return null; //fail
     }
 
-    public static String makeJSONRequest(JSONObject json) throws IOException, JSONException {
-
-        var request = new Http.Request(URL, "POST");
-        request.setHeader("Content-Type", "application/json");
-        var res = request.executeWithBody(json.toString());
-        String text = res.text();
-        //if (text.startsWith("\""))text = text.substring(1, text.length() - 1);
-        var jsonObj = new JSONObject(text);
-        if (jsonObj.getBoolean("isCorrectPassword")) {
-            return new JSONObject(text).getString("response");
-        }
-        return "Wrong Password";
-
+    private static SecretKey getKeyFromPassword(String password) throws Exception {
+        byte[] keyBytes = password.getBytes(StandardCharsets.UTF_8);
+        return new SecretKeySpec(keyBytes, 0, AES_KEY_SIZE / 8, "AES");
     }
-
 }
