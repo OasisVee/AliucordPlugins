@@ -6,7 +6,7 @@
 //include(":BetterSilentTyping")
 //include(":HighlightReplies")
 //include(":EditServersLocally")
-//include(":InvisibleMessages")
+include(":InvisibleMessages")
 //include(":StupidityDB")
 //include(":Base64")
 //include(":EditMessagesLocally")
