@@ -7,6 +7,8 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
 import javax.crypto.Cipher;
@@ -67,8 +69,9 @@ public class InvChatAPI {
         return null; //fail
     }
 
-    private static SecretKey getKeyFromPassword(String password) throws Exception {
-        byte[] keyBytes = password.getBytes(StandardCharsets.UTF_8);
-        return new SecretKeySpec(keyBytes, 0, AES_KEY_SIZE / 8, "AES");
+    private static SecretKey getKeyFromPassword(String password) throws NoSuchAlgorithmException {
+        MessageDigest sha = MessageDigest.getInstance("SHA-256");
+        byte[] key = sha.digest(password.getBytes(StandardCharsets.UTF_8));
+        return new SecretKeySpec(key, 0, AES_KEY_SIZE / 8, "AES");
     }
 }
