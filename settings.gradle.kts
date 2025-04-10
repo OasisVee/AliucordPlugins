@@ -3,7 +3,7 @@
 //include(":EncryptDMs")
 
 //include(":LightShotRoulette")
-//include(":BetterSilentTyping")
+include(":BetterSilentTyping")
 //include(":HighlightReplies")
 //include(":EditServersLocally")
 include(":InvisibleMessages")
