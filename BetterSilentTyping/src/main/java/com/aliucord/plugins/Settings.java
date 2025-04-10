@@ -2,158 +2,126 @@ package com.aliucord.plugins;
 
 import android.content.Context;
 import android.graphics.Color;
-import android.os.Bundle;
-import android.view.LayoutInflater;
+import android.text.InputType;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.LinearLayout;
-import android.widget.Toast;
-import androidx.annotation.NonNull;
-import androidx.fragment.app.FragmentManager;
+import android.widget.TextView;
 
 import com.aliucord.Utils;
 import com.aliucord.api.SettingsAPI;
-import com.discord.app.AppBottomSheet;
-import com.discord.views.CheckedSetting;
+import com.aliucord.fragments.SettingsPage;
+import com.aliucord.views.TextInput;
+import com.aliucord.widgets.LinearLayout;
 import com.discord.utilities.colors.ColorPickerUtils;
-import com.discord.widgets.dialogs.ColorPickerDialog;
+import com.discord.views.CheckedSetting;
+import com.lytefast.flexinput.R;
 
-public class Settings extends AppBottomSheet {
-    SettingsAPI settings;
-    BetterSilentTyping plugin;
+import b.k.a.a.f;
 
-    public Settings(SettingsAPI set, BetterSilentTyping plugin) {
-        settings = set;
-        this.plugin = plugin;
+public class Settings extends SettingsPage {
+    private final SettingsAPI settings;
+
+    public Settings(SettingsAPI settings) {
+        this.settings = settings;
     }
 
     @Override
-    public int getContentViewResId() {
-        return 0;
-    }
+    public void onViewBound(View view) {
+        super.onViewBound(view);
+        setActionBarTitle("BetterSilentTyping");
 
-    @Override
-    public View onCreateView(
-        LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState
-    ) {
-        Context context = inflater.getContext();
-        LinearLayout lay = new LinearLayout(context);
-        lay.setOrientation(LinearLayout.VERTICAL);
+        int p = com.aliucord.utils.DimenUtils.defaultPadding;
 
-        // Standard settings, e.g., show toast message and hide keyboard icon toggles:
-        CheckedSetting showToastSetting = Utils.createCheckedSetting(
-            context,
+        LinearLayout layout = new LinearLayout(view.getContext());
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(p, p, p, p);
+
+        // Enable/Disable plugin
+        var enableToggle = Utils.createCheckedSetting(
+            view.getContext(),
             CheckedSetting.ViewType.SWITCH,
-            "Show Toast Message When Silent Typing Toggled",
-            ""
+            "Enable Silent Typing",
+            "Whether to silently show typing without sending it to Discord."
         );
-        showToastSetting.setChecked(settings.getBool("showToast", false));
-        showToastSetting.setOnCheckedListener(bool -> settings.setBool("showToast", bool));
-        lay.addView(showToastSetting);
+        enableToggle.setChecked(settings.getBool("enabled", true));
+        enableToggle.setOnCheckedListener(checked -> settings.setBool("enabled", checked));
+        layout.addView(enableToggle);
 
-        CheckedSetting hideKeyboardSetting = Utils.createCheckedSetting(
-            context,
+        // Delay setting
+        var delayInput = new TextInput(view.getContext());
+        delayInput.setHint("Typing Delay (ms)");
+        delayInput.getEditText().setInputType(InputType.TYPE_CLASS_NUMBER);
+        delayInput.getEditText().setText(String.valueOf(settings.getInt("delay", 500)));
+        layout.addView(delayInput);
+
+        // Color picker enable
+        var enableTint = Utils.createCheckedSetting(
+            view.getContext(),
             CheckedSetting.ViewType.SWITCH,
-            "Hide Keyboard Icon",
-            ""
+            "Enable Tint",
+            "Enable custom keyboard tint color."
         );
-        hideKeyboardSetting.setChecked(settings.getBool("hideKeyboard", false));
-        hideKeyboardSetting.setOnCheckedListener(bool -> {
-            settings.setBool("hideKeyboard", bool);
-            plugin.setHideKeyboard(bool);
+        enableTint.setChecked(settings.getBool("0enabled", false));
+        enableTint.setOnCheckedListener(checked -> settings.setBool("0enabled", checked));
+        layout.addView(enableTint);
+
+        // Color picker button
+        var selectColor = new Button(view.getContext());
+        selectColor.setText("Select Tint Color");
+        selectColor.setOnClickListener(v -> {
+            int currentColor = settings.getInt("0colorInt", Color.BLACK);
+            var builder = ColorPickerUtils.INSTANCE.buildColorPickerDialog(
+                view.getContext(),
+                Utils.getResId("color_picker_title", "string"),
+                currentColor
+            );
+            if (builder.getArguments() != null)
+                builder.getArguments().putBoolean("alpha", true);
+
+            builder.k = new f() {
+                @Override
+                public void onColorSelected(int i, int i2) {
+                    settings.setInt("0colorInt", i2);
+                    BetterSilentTyping.keyboard.setTint(i2);
+                    Utils.showToast("Color selected: " + i2);
+                }
+
+                @Override
+                public void onColorReset(int i) { }
+
+                @Override
+                public void onDialogDismissed(int i) { }
+            };
+
+            builder.show(getParentFragmentManager(), "COLOR_PICKER_KEYBOARD");
         });
-        lay.addView(hideKeyboardSetting);
+        layout.addView(selectColor);
 
-        CheckedSetting hideOnTextSetting = Utils.createCheckedSetting(
-            context,
-            CheckedSetting.ViewType.SWITCH,
-            "Hide Keyboard When Text Gets Entered",
-            ""
-        );
-        hideOnTextSetting.setChecked(settings.getBool("hideOnText", false));
-        hideOnTextSetting.setOnCheckedListener(bool -> {
-            settings.setBool("hideOnText", bool);
-            if (bool) {
-                plugin.patchHideKeybordOnText();
-            } else {
-                plugin.unpatchHideKeybordOnText();
+        // Optional: Hex input for color
+        var hexInput = new TextInput(view.getContext());
+        hexInput.setHint("Hex Color (e.g. #FF4081)");
+        hexInput.getEditText().setInputType(InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+        hexInput.getEditText().setText("#" + Integer.toHexString(settings.getInt("0colorInt", Color.BLACK)));
+        hexInput.setOnTextChangeListener(s -> {
+            try {
+                int parsed = Color.parseColor(s);
+                settings.setInt("0colorInt", parsed);
+                BetterSilentTyping.keyboard.setTint(parsed);
+            } catch (Exception ignored) { }
+        });
+        layout.addView(hexInput);
+
+        // Save delay value on back
+        setOnBackPressed(() -> {
+            try {
+                int delay = Integer.parseInt(delayInput.getEditText().getText().toString());
+                settings.setInt("delay", delay);
+            } catch (NumberFormatException e) {
+                Utils.showToast("Invalid delay input");
             }
+            return false;
         });
-        lay.addView(hideOnTextSetting);
 
-        // --- Use Discord's default color picker for the keyboard icon ---
-        Button keyboardColorButton = new Button(context);
-        keyboardColorButton.setText("Keyboard Color");
-        keyboardColorButton.setOnClickListener(v -> {
-            // Retrieve the saved keyboard color (or a default value)
-            int currentColor = settings.getInt("0colorInt", Color.parseColor("#BABBBF"));
-            // Build the color picker dialog using Discord's default utility.
-            // (This code follows the pattern shown in your Kotlin example plugin.)
-            ColorPickerDialog pickerDialog = ColorPickerUtils.INSTANCE.buildColorPickerDialog(
-                context,
-                Utils.getResId("color_picker_title", "string"),
-                currentColor
-            );
-            // Enable alpha support if desired:
-            if (pickerDialog.getArguments() != null)
-                pickerDialog.getArguments().putBoolean("alpha", true);
-            // Set up a callback to receive the selected color.
-            pickerDialog.setCallback(new ColorPickerDialog.Callback() {
-                @Override
-                public void onColorSelected(int primary, int color) {
-                    settings.setInt("0colorInt", color);
-                    BetterSilentTyping.keyboard.setTint(color);
-                    Toast.makeText(context, "Keyboard color saved", Toast.LENGTH_SHORT).show();
-                }
-                @Override
-                public void onColorReset(int color) {
-                    // Optional: handle reset if needed.
-                }
-                @Override
-                public void onDialogDismissed(int color) {
-                    // Optional: perform any cleanup.
-                }
-            });
-            // Show the dialog using the fragment manager; since this Settings class extends AppBottomSheet
-            // (which in turn is a Fragment), you can call getParentFragmentManager().
-            FragmentManager fm = getParentFragmentManager();
-            pickerDialog.show(fm, "COLOR_PICKER_KEYBOARD");
-        });
-        lay.addView(keyboardColorButton);
-
-        // --- Use Discord's default color picker for the disabled icon ---
-        Button disabledIconColorButton = new Button(context);
-        disabledIconColorButton.setText("Disabled Icon Color");
-        disabledIconColorButton.setOnClickListener(v -> {
-            int currentColor = settings.getInt("1colorInt", Color.RED);
-            ColorPickerDialog pickerDialog = ColorPickerUtils.INSTANCE.buildColorPickerDialog(
-                context,
-                Utils.getResId("color_picker_title", "string"),
-                currentColor
-            );
-            if (pickerDialog.getArguments() != null)
-                pickerDialog.getArguments().putBoolean("alpha", true);
-            pickerDialog.setCallback(new ColorPickerDialog.Callback() {
-                @Override
-                public void onColorSelected(int primary, int color) {
-                    settings.setInt("1colorInt", color);
-                    BetterSilentTyping.disableImage.setTint(color);
-                    Toast.makeText(context, "Disabled icon color saved", Toast.LENGTH_SHORT).show();
-                }
-                @Override
-                public void onColorReset(int color) {
-                    // Optional callback method.
-                }
-                @Override
-                public void onDialogDismissed(int color) {
-                    // Optional callback method.
-                }
-            });
-            pickerDialog.show(getParentFragmentManager(), "COLOR_PICKER_DISABLED");
-        });
-        lay.addView(disabledIconColorButton);
-
-        return lay;
+        addView(layout);
     }
 }
