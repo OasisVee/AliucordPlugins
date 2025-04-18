@@ -142,10 +142,14 @@ public class TypingProfiles extends Plugin {
                                     }
 
                                     String typingString;
-                                    String slowmodeText;
+                                    String slowmodeText = "";
+                                    boolean hasSlowmode = (cooldownSecs > 0);
+                                    
                                     try {
                                         typingString = getTypingString.invoke(typing, binding.a.getResources(), signatureMap.keySet().stream().collect(Collectors.toList())).toString();
-                                        slowmodeText = getSlowmodeText.invoke(typing, cooldownSecs, channel.x(), !typingString.trim().isEmpty()).toString();
+                                        if (hasSlowmode) {
+                                            slowmodeText = getSlowmodeText.invoke(typing, cooldownSecs, channel.x(), !typingString.trim().isEmpty()).toString();
+                                        }
                                     } catch (IllegalAccessException | InvocationTargetException e) {
                                         logger.error(e);
                                         return;
@@ -178,8 +182,6 @@ public class TypingProfiles extends Plugin {
                                         var end = pair.second;
                                         var beginning = typingString.substring(previous, start);
 
-
-
                                         previous = end;
                                         var beginningTextView = new TextView(context, beginning);
 
@@ -210,7 +212,12 @@ public class TypingProfiles extends Plugin {
                                     TextView textView = new TextView(context, typingString.substring(previous));
                                     linearLayout.addView(textView);
 
-                                    ViewExtensions.setTextAndVisibilityBy(binding.e, slowmodeText);
+                                    // Only show the slowmode text view if slowmode is active
+                                    if (hasSlowmode) {
+                                        ViewExtensions.setTextAndVisibilityBy(binding.e, slowmodeText);
+                                    } else {
+                                        binding.e.setVisibility(View.GONE);
+                                    }
                                 });
                                 return null;
                             });
@@ -251,33 +258,6 @@ public class TypingProfiles extends Plugin {
         }));
 
         patcher.patch(WidgetChatOverlay.TypingIndicatorViewHolder.class.getDeclaredMethod("configureTyping", ChatTypingModel.Typing.class), XC_MethodReplacement.DO_NOTHING);
-
-        /*
-        Utils.mainThread.postDelayed(() -> {
-            //var e = ResourcesCompat.getDrawable(resources,,null);
-
-            logger.info(getClass().getPackage().getName());
-
-
-            //logger.info(Utils.appActivity.getParent().toString());
-            var resid = resources.getIdentifier("layout1","layout", getClass().getPackage().getName());
-
-            logger.info(resid + "");
-
-
-            frameLayout.removeAllViews();
-
-
-            Thread.setDefaultUncaughtExceptionHandler((t, e) -> {});
-
-            var xml = resources.getLayout(resid);
-
-            Utils.appActivity.getLayoutInflater().inflate(xml, frameLayout, true);
-
-            }, 4000);
-
-         */
-
     }
 
     @Override
@@ -286,6 +266,4 @@ public class TypingProfiles extends Plugin {
         patcher.unpatchAll();
         commands.unregisterAll();
     }
-}
-
-
+                         }
