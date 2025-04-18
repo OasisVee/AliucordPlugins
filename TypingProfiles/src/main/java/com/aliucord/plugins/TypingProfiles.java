@@ -127,10 +127,14 @@ public class TypingProfiles extends Plugin {
                                         binding.d.c();
                                         // RelativeLayout
                                         binding.c.setVisibility(View.GONE);
+                                        // Always hide the slowmode view
+                                        binding.e.setVisibility(View.GONE);
                                         return;
                                     }
 
                                     binding.c.setVisibility(View.VISIBLE);
+                                    // Explicitly hide the slowmode view regardless of channel state
+                                    binding.e.setVisibility(View.GONE);
 
                                     var users = _typingUsers.stream().map(aLong -> StoreStream.getUsers().getUsers().get(aLong)).collect(Collectors.toList());
 
@@ -142,14 +146,9 @@ public class TypingProfiles extends Plugin {
                                     }
 
                                     String typingString;
-                                    String slowmodeText = "";
-                                    boolean hasSlowmode = (cooldownSecs > 0);
-                                    
                                     try {
                                         typingString = getTypingString.invoke(typing, binding.a.getResources(), signatureMap.keySet().stream().collect(Collectors.toList())).toString();
-                                        if (hasSlowmode) {
-                                            slowmodeText = getSlowmodeText.invoke(typing, cooldownSecs, channel.x(), !typingString.trim().isEmpty()).toString();
-                                        }
+                                        // We're not using slowmodeText at all now
                                     } catch (IllegalAccessException | InvocationTargetException e) {
                                         logger.error(e);
                                         return;
@@ -212,12 +211,8 @@ public class TypingProfiles extends Plugin {
                                     TextView textView = new TextView(context, typingString.substring(previous));
                                     linearLayout.addView(textView);
 
-                                    // Only show the slowmode text view if slowmode is active
-                                    if (hasSlowmode) {
-                                        ViewExtensions.setTextAndVisibilityBy(binding.e, slowmodeText);
-                                    } else {
-                                        binding.e.setVisibility(View.GONE);
-                                    }
+                                    // We always hide the slowmode indicator
+                                    binding.e.setVisibility(View.GONE);
                                 });
                                 return null;
                             });
@@ -251,13 +246,25 @@ public class TypingProfiles extends Plugin {
                 var layparams = binding.e.getLayoutParams();
                 layparams.width = ViewGroup.LayoutParams.MATCH_PARENT;
                 linearLayout.setLayoutParams(layparams);
+                
+                // Hide the slowmode view as soon as we get the binding
+                binding.e.setVisibility(View.GONE);
 
             } catch (NoSuchFieldException | IllegalAccessException e) {
                 logger.error(e);
             }
         }));
 
-        patcher.patch(WidgetChatOverlay.TypingIndicatorViewHolder.class.getDeclaredMethod("configureTyping", ChatTypingModel.Typing.class), XC_MethodReplacement.DO_NOTHING);
+        // Also patch the specific method that might be showing the icon
+        patcher.patch(WidgetChatOverlay.TypingIndicatorViewHolder.class.getDeclaredMethod("configureTyping", ChatTypingModel.Typing.class), XC_MethodReplacement.returnCallback(param -> {
+            try {
+                var binding = (WidgetChatOverlayBinding) ReflectUtils.getField(param.thisObject, "binding");
+                binding.e.setVisibility(View.GONE);
+            } catch (Exception e) {
+                logger.error(e);
+            }
+            return null;
+        }));
     }
 
     @Override
@@ -266,4 +273,4 @@ public class TypingProfiles extends Plugin {
         patcher.unpatchAll();
         commands.unregisterAll();
     }
-                         }
+}
