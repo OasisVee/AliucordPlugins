@@ -8,7 +8,8 @@ description = "Typing Profiles"
 aliucord.changelog.set("""
 # 1.0.4
 - added setting to replace "typing" in "is typing..."
-
+- fixed issue where if you clear the setting it would set as nothing
+- changed updater url to roll out fixes and additions
 
 # 1.0.3
 - Minor tweaks

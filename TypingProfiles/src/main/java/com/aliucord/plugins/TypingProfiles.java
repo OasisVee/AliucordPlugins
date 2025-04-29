@@ -147,7 +147,7 @@ public class TypingProfiles extends Plugin {
                                     try {
                                         typingString = getTypingString.invoke(typing, binding.a.getResources(), signatureMap.keySet().stream().collect(Collectors.toList())).toString();
                                         // Get the custom typing replacement from settings
-                                        String typingReplacement = settings.getString("typingReplacement", "yapping");
+                                        String typingReplacement = settings.getString("typingReplacement", "typing");
                                         typingString = typingString.replace("is typing", "is " + typingReplacement);
                                         typingString = typingString.replace("are typing", "are " + typingReplacement);
                                         

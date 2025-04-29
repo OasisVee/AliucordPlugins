@@ -35,7 +35,11 @@ public final class PluginSettings extends SettingsPage {
         var button = new Button(ctx);
         button.setText("Save");
         button.setOnClickListener(v -> {
-            settings.setString("typingReplacement", editText.getText().toString().trim());
+            String text = editText.getText().toString().trim();
+            if (text.isEmpty()) {
+                text = "typing";
+            }
+            settings.setString("typingReplacement", text);
             Utils.showToast("Saved!");
             close();
         });
