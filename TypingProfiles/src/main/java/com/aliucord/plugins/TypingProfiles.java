@@ -67,6 +67,7 @@ public class TypingProfiles extends Plugin {
 
     public TypingProfiles() {
         needsResources = true;
+        settingsTab = new SettingsTab(PluginSettings.class).withArgs(settings);
     }
 
     public String generateRandomString(int length) {
@@ -145,8 +146,10 @@ public class TypingProfiles extends Plugin {
                                     String slowmodeText;
                                     try {
                                         typingString = getTypingString.invoke(typing, binding.a.getResources(), signatureMap.keySet().stream().collect(Collectors.toList())).toString();
-                                        // Replace "is typing" with "is yapping"
-                                        typingString = typingString.replace("is typing", "is yapping");
+                                        // Get the custom typing replacement from settings
+                                        String typingReplacement = settings.getString("typingReplacement", "yapping");
+                                        typingString = typingString.replace("is typing", "is " + typingReplacement);
+                                        typingString = typingString.replace("are typing", "are " + typingReplacement);
                                         
                                         slowmodeText = getSlowmodeText.invoke(typing, cooldownSecs, channel.x(), !typingString.trim().isEmpty()).toString();
                                     } catch (IllegalAccessException | InvocationTargetException e) {
